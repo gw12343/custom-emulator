@@ -1,0 +1,4 @@
+"C:\Program Files\JetBrains\CLion 2024.1.2\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2024.1.2/bin/ninja/win/x64/ninja.exe" "-DCMAKE_C_COMPILER=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-cl.exe" "-DCMAKE_CXX_COMPILER=C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin/clang-cl.exe" -G Ninja -S C:\Users\Gabe\CLionProjects\CPU32Emulator -B C:\Users\Gabe\CLionProjects\CPU32Emulator\cmake-build-debug
+-- Configuring done (0.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: C:/Users/Gabe/CLionProjects/CPU32Emulator/cmake-build-debug

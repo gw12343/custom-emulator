@@ -1,0 +1,2 @@
+#pragma code_page(65001)
+1 /* CREATEPROCESS_MANIFEST_RESOURCE_ID */ 24 /* RT_MANIFEST */ "C:/Users/Gabe/CLionProjects/CPU32Emulator/cmake-build-debug/CMakeFiles/CPU32Emulator.dir/embed.manifest"
