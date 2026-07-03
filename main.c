@@ -222,7 +222,7 @@ u32 getRegisterValue(CPU* pcpu, int reg, u16 insLit, u32 constVal, u32 op, u32 a
     if(reg > 0 && reg <=8){
         return pcpu->regs[reg - 1];
     }
-    if(reg == 9) return pcpu->program[pcpu->adr];
+    if(reg == 9) return pcpu->ram_out;
     if(reg == 10) return insLit;
     if(reg == 11) return pcpu->adr;
     if(reg == 12) return pcpu->pc;
@@ -237,9 +237,10 @@ void setRegisterValue(CPU* pcpu, int reg, u32 value){
     if(reg > 0 && reg <=8){
         pcpu->regs[reg - 1] = value;
     }else if(reg == 9){
-        pcpu->program[pcpu->adr] = value; //TODO mem map
+        //pcpu->ram_out = value;
+        pcpu->program[pcpu->adr] = value;
         if(pcpu->adr == 0x6000){
-            //printf("wrote: %c", (char)value);
+            printf("wrote: %u\n", (int)value&0xff);
             *(pcpu->outptr++) = (char)value;
             *(pcpu->outptr) = '\0';
         }
@@ -264,7 +265,7 @@ u32 aluMux(CPU* pcpu, u32 reg, u32 constVal){
         return pcpu->regs[reg - 1];
     }
     if(reg == 9){
-        return pcpu->program[pcpu->adr];
+        return pcpu->ram_out;
     }
     if(reg == 10){
         return pcpu->ins_reg & 0xFFFF;
@@ -282,13 +283,16 @@ u32 aluMux(CPU* pcpu, u32 reg, u32 constVal){
         return pcpu->bp;
     }
     if(reg == 15){
-        return pcpu->bp;
+        return pcpu->sp;
     }
     return 0;
 }
 
 void cycle(CPU* pcpu) {
     if(!pcpu || pcpu->halted) return;
+
+    u32 next_ram_out = pcpu->program[pcpu->adr];
+
     u16 mc_adr = microcode_address(pcpu->mc_counter, pcpu->ins_reg >> 24);
     u32 mc = pcpu->microcode[mc_adr];
 
@@ -311,10 +315,12 @@ void cycle(CPU* pcpu) {
     bool constB = (mc >> 28) & 1;
 
     if(halt){
-        printf("======= CPU HALTED =======");
+        printf("======= CPU HALTED =======\n");
         pcpu->halted = true;
         return;
     }
+
+
 
     u32 a = aluMux(pcpu, (pcpu->ins_reg >> 20) & 0xF, constantVal);
     u32 b;
@@ -339,28 +345,41 @@ void cycle(CPU* pcpu) {
         registerOut = (pcpu->ins_reg >> 16) & 0xF;
     }
 
-/*
-    printf("\nINS %x (step %d)\n", pcpu->ins_reg >> 24, pcpu->mc_counter);
-    {
-        printf("        register out: %u %s\n", registerOut, get_load_name(registerOut));
-        printf("        register in: %u %s\n", registerIn, get_store_name(registerIn));
-        printf("        constant val: %u \n", constantVal);
-        printf("        alu op: %u \n", aluOp);
-        printf("        pc count: %s \n", pcCount ? "true" : "false");
-        printf("        mc end: %s \n", mcEnd ? "true" : "false");
-        printf("        sp count: %s \n", spCount ? "true" : "false");
-        printf("        ins a out: %s \n", insAOut ? "true" : "false");
-        printf("        ins b out: %s \n", insBOut ? "true" : "false");
-        printf("        ins a in: %s \n", insAIn ? "true" : "false");
-        printf("        ins b in: %s \n", insBIn ? "true" : "false");
-        printf("        sp dec: %s \n", spDecrement ? "true" : "false");
-        printf("        update flags: %s \n", updateFlags ? "true" : "false");
-        printf("        halt: %s \n", halt ? "true" : "false");
-        printf("        flagCondition: %u \n", flagCondition);
-        printf("        use ins lit B: %u \n", insLitB);
-        printf("        use const b: %u \n", constB);
-    }
-*/
+    //
+    // printf("\n%d:  INS %x (step %d)\n", pcpu->cycles, pcpu->ins_reg >> 24, pcpu->mc_counter);
+    // {
+    //     printf("        register out: %u %s\n", registerOut, get_load_name(registerOut));
+    //     printf("        register in: %u %s\n", registerIn, get_store_name(registerIn));
+    //     printf("        constant val: %u \n", constantVal);
+    //     printf("        alu op: %u \n", aluOp);
+    //     printf("        pc count: %s \n", pcCount ? "true" : "false");
+    //     printf("        mc end: %s \n", mcEnd ? "true" : "false");
+    //     printf("        sp count: %s \n", spCount ? "true" : "false");
+    //     printf("        ins a out: %s \n", insAOut ? "true" : "false");
+    //     printf("        ins b out: %s \n", insBOut ? "true" : "false");
+    //     printf("        ins a in: %s \n", insAIn ? "true" : "false");
+    //     printf("        ins b in: %s \n", insBIn ? "true" : "false");
+    //     printf("        sp dec: %s \n", spDecrement ? "true" : "false");
+    //     printf("        update flags: %s \n", updateFlags ? "true" : "false");
+    //     printf("        halt: %s \n", halt ? "true" : "false");
+    //     printf("        flagCondition: %u \n", flagCondition);
+    //     printf("        use ins lit B: %u \n", insLitB);
+    //     printf("        use const b: %u \n", constB);
+    //
+    //     printf("    r1: %x \n", pcpu->regs[0]);
+    //     printf("    r2: %x \n", pcpu->regs[1]);
+    //     printf("    r3: %x \n", pcpu->regs[2]);
+    //     printf("    r4: %x \n", pcpu->regs[3]);
+    //     printf("    r5: %x \n", pcpu->regs[4]);
+    //     printf("    r6: %x \n", pcpu->regs[5]);
+    //     printf("    r7: %x \n", pcpu->regs[6]);
+    //     printf("    r8: %x \n", pcpu->regs[7]);
+    //     printf("    sp: %x \n", pcpu->sp);
+    //     printf("    bp: %x \n", pcpu->bp);
+    //     printf("    pc: %x \n", pcpu->pc);
+    //
+    // }
+
 
 
 
@@ -368,6 +387,7 @@ void cycle(CPU* pcpu) {
 
     pcpu->debug_bus = bus;
     setRegisterValue(pcpu, registerIn, bus);
+
     //printf("    bus: %x\n", bus);
     //printf("    ins: %x\n\n\n", pcpu->ins_reg);
 
@@ -403,15 +423,21 @@ void cycle(CPU* pcpu) {
             flagConditionFailed = false;
     }
 
-    if(mcEnd || flagConditionFailed){
-        pcpu->mc_counter = 0;
-        return;
-    }
+
+    //syncronous ram read
+    pcpu->ram_out = next_ram_out;
+
+    ++pcpu->cycles;
+
     if(spCount){
         pcpu->sp += spDecrement ? -1 : 1;
     }
 
+    if(mcEnd || flagConditionFailed){
+        pcpu->mc_counter = 0;
 
+        return;
+    }
 }
 
 u16 microcode_address(int counter, u8 instruction) {
@@ -420,7 +446,7 @@ u16 microcode_address(int counter, u8 instruction) {
 
 void load_hex(const char filename[], u32* data) {
     FILE *file = NULL;
-    char buffer[72];
+    char buffer[720];
     file = fopen(filename, "r");
     if(file == NULL){
         return;
@@ -445,6 +471,7 @@ void resetCPU(CPU* pcpu) {
     pcpu->bp = 0;
     pcpu->sp = 0;
     pcpu->adr = 0;
+    pcpu->cycles = 0;
     pcpu->output[0] = '\0';
     pcpu->outptr = &pcpu->output[0];
     pcpu->flags[FLAG_Z] = false;
@@ -455,7 +482,8 @@ void resetCPU(CPU* pcpu) {
     memset(pcpu->regs, 0, sizeof pcpu->regs);
     pcpu->halted = false;
     pcpu->mc_counter = 0;
-    load_hex("program.rom", pcpu->program);
-    load_hex("microcode.rom", pcpu->microcode);
+    load_hex("C:/Users/Gabe/Documents/GitHub/custom-emulator/program.rom", pcpu->program);
+    load_hex("C:/Users/Gabe/Documents/GitHub/custom-emulator/microcode.rom", pcpu->microcode);
+    pcpu->ram_out = pcpu->program[pcpu->adr];
 }
 

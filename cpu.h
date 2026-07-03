@@ -26,9 +26,11 @@ typedef struct cpu {
     u32 bp;
     u32 sp;
     u32 adr;
+    u32 cycles;
     bool halted;
     bool flags[5];
     u32 program[65536];
+    u32 ram_out;
     u32 microcode[65536];
     int mc_counter;
     char* outptr;
