@@ -10,7 +10,8 @@
 
 
 const u32 constantVals[] = {0x0, 0x1, 0xFFFFFFFF, 0x0};
-
+bool cli = false;
+char* program_path = "C:/Users/Gabe/Documents/GitHub/custom-emulator/program.rom";
 void load_hex(const char filename[], u32* data);
 u16 microcode_address(int counter, u8 instruction);
 void cycle(CPU* pcpu);
@@ -83,8 +84,33 @@ void play(){
 }
 
 
+
+void no_ui()
+{
+    cli = true;
+    cpu = (CPU*)malloc(sizeof(CPU));
+    resetCPU(cpu);
+
+    while(!cpu->halted)
+    {
+        cycle(cpu);
+    }
+    free(cpu);
+}
+
+
 int SDL_main(int argc, char* argv[])
 {
+    if(argc > 1)
+    {
+        program_path = argv[1];
+        printf("path: %s\n", program_path);
+    }
+    if(argc > 2 && !strcmp(argv[2], "--no-ui"))
+    {
+        no_ui();
+        return 0;
+    }
     cpu = (CPU*)malloc(sizeof(CPU));
     resetCPU(cpu);
 
@@ -240,7 +266,7 @@ void setRegisterValue(CPU* pcpu, int reg, u32 value){
         //pcpu->ram_out = value;
         pcpu->program[pcpu->adr] = value;
         if(pcpu->adr == 0x6000){
-            printf("wrote: %u\n", (int)value&0xff);
+            printf("%c", (char)value);
             *(pcpu->outptr++) = (char)value;
             *(pcpu->outptr) = '\0';
         }
@@ -315,7 +341,8 @@ void cycle(CPU* pcpu) {
     bool constB = (mc >> 28) & 1;
 
     if(halt){
-        printf("======= CPU HALTED =======\n");
+        if(!cli)
+            printf("======= CPU HALTED =======\n");
         pcpu->halted = true;
         return;
     }
@@ -445,6 +472,7 @@ u16 microcode_address(int counter, u8 instruction) {
 }
 
 void load_hex(const char filename[], u32* data) {
+    printf("loading hex: %s\n", filename);
     FILE *file = NULL;
     char buffer[720];
     file = fopen(filename, "r");
@@ -482,7 +510,7 @@ void resetCPU(CPU* pcpu) {
     memset(pcpu->regs, 0, sizeof pcpu->regs);
     pcpu->halted = false;
     pcpu->mc_counter = 0;
-    load_hex("C:/Users/Gabe/Documents/GitHub/custom-emulator/program.rom", pcpu->program);
+    load_hex(program_path, pcpu->program);
     load_hex("C:/Users/Gabe/Documents/GitHub/custom-emulator/microcode.rom", pcpu->microcode);
     pcpu->ram_out = pcpu->program[pcpu->adr];
 }
